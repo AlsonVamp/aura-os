@@ -1,0 +1,766 @@
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 54d65f8488..859e8f2190 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1879,6 +1879,7 @@ source "board/cavium/thunderx/Kconfig"
+ source "board/cirrus/edb93xx/Kconfig"
+ source "board/eets/pdu001/Kconfig"
+ source "board/emulation/qemu-arm/Kconfig"
++source "board/ett/aura/Kconfig"
+ source "board/freescale/ls2080a/Kconfig"
+ source "board/freescale/ls2080aqds/Kconfig"
+ source "board/freescale/ls2080ardb/Kconfig"
+diff --git a/arch/arm/mach-omap2/am33xx/Kconfig b/arch/arm/mach-omap2/am33xx/Kconfig
+index 39d9c2873b..6d98b43551 100644
+--- a/arch/arm/mach-omap2/am33xx/Kconfig
++++ b/arch/arm/mach-omap2/am33xx/Kconfig
+@@ -175,6 +175,13 @@ config TARGET_PENGWYN
+ 	select DM_SERIAL
+ 	imply CMD_DM
+ 
++config TARGET_ETT_AURA
++	bool "Support Ecotelecom-T Aura"
++	select DM
++	select DM_GPIO
++	select DM_SERIAL
++	imply CMD_DM
++
+ config TARGET_PEPPER
+ 	bool "Support pepper"
+ 	select DM
+diff --git a/board/ett/aura/Kconfig b/board/ett/aura/Kconfig
+new file mode 100644
+index 0000000000..8473f0c1eb
+--- /dev/null
++++ b/board/ett/aura/Kconfig
+@@ -0,0 +1,15 @@
++if TARGET_ETT_AURA
++
++config SYS_BOARD
++	default "aura"
++
++config SYS_VENDOR
++	default "ett"
++
++config SYS_SOC
++	default "am33xx"
++
++config SYS_CONFIG_NAME
++	default "ett_aura"
++
++endif
+diff --git a/board/ett/aura/MAINTAINERS b/board/ett/aura/MAINTAINERS
+new file mode 100644
+index 0000000000..3ad1b17ef0
+--- /dev/null
++++ b/board/ett/aura/MAINTAINERS
+@@ -0,0 +1,6 @@
++ETT_AURA BOARD
++M:	Aleksandr Nazarov
++S:	Maintained
++F:	board/ett/aura/
++F:	include/configs/ett_aura.h
++F:	configs/ett_aura_defconfig
+diff --git a/board/ett/aura/Makefile b/board/ett/aura/Makefile
+new file mode 100644
+index 0000000000..c34b9b1dd8
+--- /dev/null
++++ b/board/ett/aura/Makefile
+@@ -0,0 +1,11 @@
++# SPDX-License-Identifier: GPL-2.0+
++#
++# Makefile
++#
++# Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
++
++ifeq ($(CONFIG_SKIP_LOWLEVEL_INIT),)
++obj-y	:= mux.o
++endif
++
++obj-y	+= board.o
+diff --git a/board/ett/aura/README b/board/ett/aura/README
+new file mode 100644
+index 0000000000..19e0eccbac
+--- /dev/null
++++ b/board/ett/aura/README
+@@ -0,0 +1,205 @@
++Summary
++=======
++
++This document covers various features of the 'am335x_evm' build, and some of
++the related build targets (am335x_evm_uartN, etc).
++
++Hardware
++========
++
++The binary produced by this board supports, based on parsing of the EEPROM
++documented in TI's reference designs:
++- AM335x GP EVM
++- AM335x EVM SK
++- Beaglebone White
++- Beaglebone Black
++
++Customization
++=============
++
++Given that all of the above boards are reference platforms (and the
++Beaglebone platforms are OSHA), it is likely that this platform code and
++configuration will be used as the basis of a custom platform.  It is
++worth noting that aside from things such as NAND or MMC only being
++required if a custom platform makes use of these blocks, the following
++are required, depending on design:
++
++- GPIO is only required if DDR3 power is controlled in a way similar to
++  EVM SK
++- SPI is only required for SPI flash, or exposing the SPI bus.
++
++The following blocks are required:
++- I2C, to talk with the PMIC and ensure that we do not run afoul of
++  errata 1.0.24.
++
++When removing options as part of customization,
++CONFIG_EXTRA_ENV_SETTINGS will need additional care to update for your
++needs and to remove no longer relevant options as in some cases we
++define additional text blocks (such as for NAND or DFU strings).  Also
++note that all of the SPL options are grouped together, rather than with
++the IP blocks, so both areas will need their choices updated to reflect
++the custom design.
++
++NAND
++====
++
++The AM335x GP EVM ships with a 256MiB NAND available in most profiles.  In
++this example to program the NAND we assume that an SD card has been
++inserted with the files to write in the first SD slot and that mtdparts
++have been configured correctly for the board. All images are first loaded
++into memory, then written to NAND.
++
++Step-1: Building u-boot for NAND boot
++	Set following CONFIGxx options for NAND device.
++	CONFIG_SYS_NAND_PAGE_SIZE	number of main bytes in NAND page
++	CONFIG_SYS_NAND_OOBSIZE		number of OOB bytes in NAND page
++	CONFIG_SYS_NAND_BLOCK_SIZE	number of bytes in NAND erase-block
++	CONFIG_SYS_NAND_ECCPOS		ECC map for NAND page
++	CONFIG_NAND_OMAP_ECCSCHEME	(refer doc/README.nand)
++
++Step-2: Flashing NAND via MMC/SD
++	# select BOOTSEL to MMC/SD boot and boot from MMC/SD card
++	U-Boot # mmc rescan
++	# erase flash
++	U-Boot # nand erase.chip
++	U-Boot # env default -f -a
++	U-Boot # saveenv
++	# flash MLO. Redundant copies of MLO are kept for failsafe
++	U-Boot # load mmc 0 0x82000000 MLO
++	U-Boot # nand write 0x82000000 0x00000 0x20000
++	U-Boot # nand write 0x82000000 0x20000 0x20000
++	U-Boot # nand write 0x82000000 0x40000 0x20000
++	U-Boot # nand write 0x82000000 0x60000 0x20000
++	# flash u-boot.img
++	U-Boot # load mmc 0 0x82000000 u-boot.img
++	U-Boot # nand write 0x82000000 0x80000 0x60000
++	# flash kernel image
++	U-Boot # load mmc 0 0x82000000 uImage
++	U-Boot # nand write 0x82000000 ${nandsrcaddr} ${nandimgsize}
++	# flash filesystem image
++	U-Boot # load mmc 0 0x82000000 filesystem.img
++	U-Boot # nand write 0x82000000 ${loadaddress} 0x300000
++
++Step-3: Set BOOTSEL pin to select NAND boot, and POR the device.
++	The device should boot from images flashed on NAND device.
++
++NOR
++===
++
++The Beaglebone White can be equipped with a "memory cape" that in turn can
++have a NOR module plugged into it.  In this case it is then possible to
++program and boot from NOR.  Note that due to how U-Boot is designed we
++must build a specific version of U-Boot that knows we have NOR flash.  This
++build is named 'am335x_evm_nor'.  Further, we have a 'am335x_evm_norboot'
++build that will assume that the environment is on NOR rather than NAND.  In
++the following example we assume that and SD card has been populated with
++MLO and u-boot.img from a 'am335x_evm_nor' build and also contains the
++'u-boot.bin' from a 'am335x_evm_norboot' build.  When booting from NOR, a
++binary must be written to the start of NOR, with no header or similar
++prepended.  In the following example we use a size of 512KiB (0x80000)
++as that is how much space we set aside before the environment, as per
++the config file.
++
++U-Boot # mmc rescan
++U-Boot # load mmc 0 ${loadaddr} u-boot.bin
++U-Boot # protect off 08000000 +80000
++U-Boot # erase 08000000 +80000
++U-Boot # cp.b ${loadaddr} 08000000 ${filesize}
++
++Falcon Mode
++===========
++
++The default build includes "Falcon Mode" (see doc/README.falcon) via NAND,
++eMMC (or raw SD cards) and FAT SD cards.  Our default behavior currently is
++to read a 'c' on the console while in SPL at any point prior to loading the
++OS payload (so as soon as possible) to opt to booting full U-Boot.  Also
++note that while one can program Falcon Mode "in place" great care needs to
++be taken by the user to not 'brick' their setup.  As these are all eval
++boards with multiple boot methods, recovery should not be an issue in this
++worst-case however.
++
++Falcon Mode: eMMC
++=================
++
++The recommended layout in this case is:
++
++MMC BLOCKS      |--------------------------------| LOCATION IN BYTES
++0x0000 - 0x007F : MBR or GPT table               : 0x000000 - 0x020000
++0x0080 - 0x00FF : ARGS or FDT file               : 0x010000 - 0x020000
++0x0100 - 0x01FF : SPL.backup1 (first copy used)  : 0x020000 - 0x040000
++0x0200 - 0x02FF : SPL.backup2 (second copy used) : 0x040000 - 0x060000
++0x0300 - 0x06FF : U-Boot                         : 0x060000 - 0x0e0000
++0x0700 - 0x08FF : U-Boot Env + Redundant         : 0x0e0000 - 0x120000
++0x0900 - 0x28FF : Kernel                         : 0x120000 - 0x520000
++
++Note that when we run 'spl export' it will prepare to boot the kernel.
++This includes relocation of the uImage from where we loaded it to the entry
++point defined in the header.  As these locations overlap by default, it
++would leave us with an image that if written to MMC will not boot, so
++instead of using the loadaddr variable we use 0x81000000 in the following
++example.  In this example we are loading from the network, for simplicity,
++and assume a valid partition table already exists and 'mmc dev' has already
++been run to select the correct device.  Also note that if you previously
++had a FAT partition (such as on a Beaglebone Black) it is not enough to
++write garbage into the area, you must delete it from the partition table
++first.
++
++# Ensure we are able to talk with this mmc device
++U-Boot # mmc rescan
++U-Boot # tftp 81000000 am335x/MLO
++# Write to two of the backup locations ROM uses
++U-Boot # mmc write 81000000 100 100
++U-Boot # mmc write 81000000 200 100
++# Write U-Boot to the location set in the config
++U-Boot # tftp 81000000 am335x/u-boot.img
++U-Boot # mmc write 81000000 300 400
++# Load kernel and device tree into memory, perform export
++U-Boot # tftp 81000000 am335x/uImage
++U-Boot # run findfdt
++U-Boot # tftp ${fdtaddr} am335x/${fdtfile}
++U-Boot # run mmcargs
++U-Boot # spl export fdt 81000000 - ${fdtaddr}
++# Write the updated device tree to MMC
++U-Boot # mmc write ${fdtaddr} 80 80
++# Write the uImage to MMC
++U-Boot # mmc write 81000000 900 2000
++
++Falcon Mode: FAT SD cards
++=========================
++
++In this case the additional file is written to the filesystem.  In this
++example we assume that the uImage and device tree to be used are already on
++the FAT filesystem (only the uImage MUST be for this to function
++afterwards) along with a Falcon Mode aware MLO and the FAT partition has
++already been created and marked bootable:
++
++U-Boot # mmc rescan
++# Load kernel and device tree into memory, perform export
++U-Boot # load mmc 0:1 ${loadaddr} uImage
++U-Boot # run findfdt
++U-Boot # load mmc 0:1 ${fdtaddr} ${fdtfile}
++U-Boot # run mmcargs
++U-Boot # spl export fdt ${loadaddr} - ${fdtaddr}
++
++This will print a number of lines and then end with something like:
++   Using Device Tree in place at 80f80000, end 80f85928
++   Using Device Tree in place at 80f80000, end 80f88928
++So then you:
++
++U-Boot # fatwrite mmc 0:1 0x80f80000 args 8928
++
++Falcon Mode: NAND
++=================
++
++In this case the additional data is written to another partition of the
++NAND.  In this example we assume that the uImage and device tree to be are
++already located on the NAND somewhere (such as filesystem or mtd partition)
++along with a Falcon Mode aware MLO written to the correct locations for
++booting and mtdparts have been configured correctly for the board:
++
++U-Boot # nand read ${loadaddr} kernel
++U-Boot # load nand rootfs ${fdtaddr} /boot/am335x-evm.dtb
++U-Boot # run nandargs
++U-Boot # spl export fdt ${loadaddr} - ${fdtaddr}
++U-Boot # nand erase.part u-boot-spl-os
++U-Boot # nand write ${fdtaddr} u-boot-spl-os
+diff --git a/board/ett/aura/board.c b/board/ett/aura/board.c
+new file mode 100644
+index 0000000000..55ca82f959
+--- /dev/null
++++ b/board/ett/aura/board.c
+@@ -0,0 +1,204 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * board.c
++ *
++ * Copyright (C) 2013 Lothar Felten <lothar.felten@gmail.com>
++ */
++
++#include <common.h>
++#include <env.h>
++#include <init.h>
++#include <net.h>
++#include <serial.h>
++#include <asm/arch/cpu.h>
++#include <asm/arch/hardware.h>
++#include <asm/arch/ddr_defs.h>
++#include <asm/arch/clock.h>
++#include <asm/arch/sys_proto.h>
++#include <i2c.h>
++#include <phy.h>
++#include <cpsw.h>
++#include "board.h"
++
++DECLARE_GLOBAL_DATA_PTR;
++
++static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
++
++#if defined(CONFIG_SPL_BUILD)
++
++/* DDR3 RAM timings */
++static const struct ddr_data ddr3_data = {
++	.datardsratio0 = MT41K128MJT187E_RD_DQS,
++	.datawdsratio0 = MT41K128MJT187E_WR_DQS,
++	.datafwsratio0 = MT41K128MJT187E_PHY_FIFO_WE,
++	.datawrsratio0 = MT41K128MJT187E_PHY_WR_DATA,
++};
++
++static const struct cmd_control ddr3_cmd_ctrl_data = {
++	.cmd0csratio = MT41K128MJT187E_RATIO,
++	.cmd0iclkout = MT41K128MJT187E_INVERT_CLKOUT,
++	.cmd1csratio = MT41K128MJT187E_RATIO,
++	.cmd1iclkout = MT41K128MJT187E_INVERT_CLKOUT,
++	.cmd2csratio = MT41K128MJT187E_RATIO,
++	.cmd2iclkout = MT41K128MJT187E_INVERT_CLKOUT,
++};
++
++static struct emif_regs ddr3_emif_reg_data = {
++	.sdram_config = MT41K128MJT187E_EMIF_SDCFG,
++	.ref_ctrl = MT41K128MJT187E_EMIF_SDREF,
++	.sdram_tim1 = MT41K128MJT187E_EMIF_TIM1,
++	.sdram_tim2 = MT41K128MJT187E_EMIF_TIM2,
++	.sdram_tim3 = MT41K128MJT187E_EMIF_TIM3,
++	.zq_config = MT41K128MJT187E_ZQ_CFG,
++	.emif_ddr_phy_ctlr_1 = MT41K128MJT187E_EMIF_READ_LATENCY |
++				PHY_EN_DYN_PWRDN,
++};
++
++const struct ctrl_ioregs ddr3_ioregs = {
++	.cm0ioctl		= MT41K128MJT187E_IOCTRL_VALUE,
++	.cm1ioctl		= MT41K128MJT187E_IOCTRL_VALUE,
++	.cm2ioctl		= MT41K128MJT187E_IOCTRL_VALUE,
++	.dt0ioctl		= MT41K128MJT187E_IOCTRL_VALUE,
++	.dt1ioctl		= MT41K128MJT187E_IOCTRL_VALUE,
++};
++
++#ifdef CONFIG_SPL_OS_BOOT
++int spl_start_uboot(void)
++{
++	/* break into full u-boot on 'c' */
++	return serial_tstc() && serial_getc() == 'c';
++}
++#endif
++
++#define OSC	(V_OSCK/1000000)
++const struct dpll_params dpll_ddr_266 = {
++		266, OSC-1, 1, -1, -1, -1, -1};
++const struct dpll_params dpll_ddr_303 = {
++		303, OSC-1, 1, -1, -1, -1, -1};
++const struct dpll_params dpll_ddr_400 = {
++		400, OSC-1, 1, -1, -1, -1, -1};
++
++void am33xx_spl_board_init(void)
++{
++	/*
++	 * The pengwyn board uses the TPS650250 PMIC  without I2C
++	 * interface and will output the following fixed voltages:
++	 * DCDC1=3V3 (IO) DCDC2=1V5 (DDR) DCDC3=1V26 (Vmpu)
++	 * VLDO1=1V8 (IO) VLDO2=1V8(IO)
++	 * Vcore=1V1 is fixed, generated by TPS62231
++	 */
++
++	/* Get the frequency */
++	dpll_mpu_opp100.m = am335x_get_efuse_mpu_max_freq(cdev);
++
++	/* Set CORE Frequencies to OPP100 */
++	do_setup_dpll(&dpll_core_regs, &dpll_core_opp100);
++
++	/* 720MHz cpu, this might change on newer board revisions */
++	dpll_mpu_opp100.m = MPUPLL_M_720;
++	do_setup_dpll(&dpll_mpu_regs, &dpll_mpu_opp100);
++}
++
++const struct dpll_params *get_dpll_ddr_params(void)
++{
++	/* future configs can return other clock settings */
++	return &dpll_ddr_303;
++}
++
++void set_uart_mux_conf(void)
++{
++	enable_uart0_pin_mux();
++}
++
++void set_mux_conf_regs(void)
++{
++	enable_board_pin_mux();
++}
++
++void sdram_init(void)
++{
++	config_ddr(303, &ddr3_ioregs, &ddr3_data,
++		   &ddr3_cmd_ctrl_data, &ddr3_emif_reg_data, 0);
++}
++#endif /* if CONFIG_SPL_BUILD */
++
++/*
++ * Basic board specific setup.  Pinmux has been handled already.
++ */
++int board_init(void)
++{
++	// i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
++	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
++	gpmc_init();
++	return 0;
++}
++
++#ifdef CONFIG_DRIVER_TI_CPSW
++static void cpsw_control(int enabled)
++{
++	/* VTP can be added here */
++	return;
++}
++
++static struct cpsw_slave_data cpsw_slaves[] = {
++	{
++		.slave_reg_ofs	= 0x208,
++		.sliver_reg_ofs	= 0xd80,
++		.phy_addr	= 1,
++		.phy_if		= PHY_INTERFACE_MODE_MII,
++	},
++};
++
++static struct cpsw_platform_data cpsw_data = {
++	.mdio_base		= CPSW_MDIO_BASE,
++	.cpsw_base		= CPSW_BASE,
++	.mdio_div		= 0xff,
++	.channels		= 8,
++	.cpdma_reg_ofs		= 0x800,
++	.slaves			= 1,
++	.slave_data		= cpsw_slaves,
++	.ale_reg_ofs		= 0xd00,
++	.ale_entries		= 1024,
++	.host_port_reg_ofs	= 0x108,
++	.hw_stats_reg_ofs	= 0x900,
++	.bd_ram_ofs		= 0x2000,
++	.mac_control		= (1 << 5),
++	.control		= cpsw_control,
++	.host_port_num		= 0,
++	.version		= CPSW_CTRL_VERSION_2,
++};
++
++int board_eth_init(bd_t *bis)
++{
++	int rv, n = 0;
++	uint8_t mac_addr[6];
++	uint32_t mac_hi, mac_lo;
++
++	if (!eth_env_get_enetaddr("ethaddr", mac_addr)) {
++		printf("<ethaddr> not set. Reading from E-fuse\n");
++		/* try reading mac address from efuse */
++		mac_lo = readl(&cdev->macid0l);
++		mac_hi = readl(&cdev->macid0h);
++		mac_addr[0] = mac_hi & 0xFF;
++		mac_addr[1] = (mac_hi & 0xFF00) >> 8;
++		mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
++		mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
++		mac_addr[4] = mac_lo & 0xFF;
++		mac_addr[5] = (mac_lo & 0xFF00) >> 8;
++
++		if (is_valid_ethaddr(mac_addr))
++			eth_env_set_enetaddr("ethaddr", mac_addr);
++		else
++			return n;
++	}
++
++	writel(MII_MODE_ENABLE, &cdev->miisel);
++
++	rv = cpsw_register(&cpsw_data);
++	if (rv < 0)
++		printf("Error %d registering CPSW switch\n", rv);
++	else
++		n += rv;
++	return n;
++}
++#endif /* if CONFIG_DRIVER_TI_CPSW */
+diff --git a/board/ett/aura/board.h b/board/ett/aura/board.h
+new file mode 100644
+index 0000000000..211f2493ff
+--- /dev/null
++++ b/board/ett/aura/board.h
+@@ -0,0 +1,21 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++/*
++ * board.h
++ *
++ * TI AM335x boards information header
++ *
++ * Copyright (C) 2011, Texas Instruments, Incorporated - http://www.ti.com/
++ */
++
++#ifndef _BOARD_H_
++#define _BOARD_H_
++
++void enable_uart0_pin_mux(void);
++// void enable_uart1_pin_mux(void);
++// void enable_uart2_pin_mux(void);
++// void enable_uart3_pin_mux(void);
++// void enable_uart4_pin_mux(void);
++// void enable_uart5_pin_mux(void);
++void enable_board_pin_mux(void);
++
++#endif
+diff --git a/board/ett/aura/mux.c b/board/ett/aura/mux.c
+new file mode 100644
+index 0000000000..7583e833ed
+--- /dev/null
++++ b/board/ett/aura/mux.c
+@@ -0,0 +1,97 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * mux.c
++ *
++ * Copyright (C) 2013 Lothar Felten <lothar.felten@gmail.com>
++ */
++
++#include <common.h>
++#include <asm/arch/sys_proto.h>
++#include <asm/arch/hardware.h>
++#include <asm/arch/mux.h>
++#include <asm/io.h>
++#include "board.h"
++
++/* UART0 pins E15(rx),E16(tx) [E17(rts),E18(cts)] */
++static struct module_pin_mux uart0_pin_mux[] = {
++	{OFFSET(uart0_rxd), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* UART0_RXD */
++	{OFFSET(uart0_txd), (MODE(0) | PULLUDEN)},		/* UART0_TXD */
++	{-1},
++};
++
++/* unused: UART1 pins D15(tx),D16(rx),D17(cts),D18(rts) */
++
++/* I2C pins C16(scl)/C17(sda) */
++static struct module_pin_mux i2c0_pin_mux[] = {
++	{OFFSET(i2c0_sda), (MODE(0) | RXACTIVE |
++					PULLUDEN | SLEWCTRL)}, /* I2C0_DATA */
++	{OFFSET(i2c0_scl), (MODE(0) | RXACTIVE |
++					PULLUDEN | SLEWCTRL)}, /* I2C0_SCLK */
++	{-1},
++};
++
++/* MMC0 pins */
++static struct module_pin_mux mmc0_pin_mux[] = {
++	{OFFSET(mmc0_dat3), (MODE(0) | RXACTIVE | PULLUP_EN)}, /* MMC0_DAT3 */
++	{OFFSET(mmc0_dat2), (MODE(0) | RXACTIVE | PULLUP_EN)}, /* MMC0_DAT2 */
++	{OFFSET(mmc0_dat1), (MODE(0) | RXACTIVE | PULLUP_EN)}, /* MMC0_DAT1 */
++	{OFFSET(mmc0_dat0), (MODE(0) | RXACTIVE | PULLUP_EN)}, /* MMC0_DAT0 */
++	{OFFSET(mmc0_clk), (MODE(0) | RXACTIVE | PULLUP_EN)},  /* MMC0_CLK */
++	{OFFSET(mmc0_cmd), (MODE(0) | RXACTIVE | PULLUP_EN)},  /* MMC0_CMD */
++	{OFFSET(spi0_cs1), (MODE(5) | RXACTIVE | PULLUP_EN)},  /* MMC0_CD */
++	{-1},
++};
++
++/* MII pins */
++static struct module_pin_mux mii1_pin_mux[] = {
++	{OFFSET(mii1_rxerr), MODE(0) | RXACTIVE},	/* MII1_RXERR */
++	{OFFSET(mii1_txen), MODE(0)},			/* MII1_TXEN */
++	{OFFSET(mii1_rxdv), MODE(0) | RXACTIVE},	/* MII1_RXDV */
++	{OFFSET(mii1_txd3), MODE(0)},			/* MII1_TXD3 */
++	{OFFSET(mii1_txd2), MODE(0)},			/* MII1_TXD2 */
++	{OFFSET(mii1_txd1), MODE(0)},			/* MII1_TXD1 */
++	{OFFSET(mii1_txd0), MODE(0)},			/* MII1_TXD0 */
++	{OFFSET(mii1_txclk), MODE(0) | RXACTIVE},	/* MII1_TXCLK */
++	{OFFSET(mii1_rxclk), MODE(0) | RXACTIVE},	/* MII1_RXCLK */
++	{OFFSET(mii1_rxd3), MODE(0) | RXACTIVE},	/* MII1_RXD3 */
++	{OFFSET(mii1_rxd2), MODE(0) | RXACTIVE},	/* MII1_RXD2 */
++	{OFFSET(mii1_rxd1), MODE(0) | RXACTIVE},	/* MII1_RXD1 */
++	{OFFSET(mii1_rxd0), MODE(0) | RXACTIVE},	/* MII1_RXD0 */
++	{OFFSET(mdio_data), MODE(0) | RXACTIVE | PULLUP_EN}, /* MDIO_DATA */
++	{OFFSET(mdio_clk), MODE(0) | PULLUP_EN},	/* MDIO_CLK */
++	{-1},
++};
++
++/* NAND pins */
++static struct module_pin_mux nand_pin_mux[] = {
++	{OFFSET(gpmc_ad0), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* NAND AD0 */
++	{OFFSET(gpmc_ad1), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* NAND AD1 */
++	{OFFSET(gpmc_ad2), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* NAND AD2 */
++	{OFFSET(gpmc_ad3), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* NAND AD3 */
++	{OFFSET(gpmc_ad4), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* NAND AD4 */
++	{OFFSET(gpmc_ad5), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* NAND AD5 */
++	{OFFSET(gpmc_ad6), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* NAND AD6 */
++	{OFFSET(gpmc_ad7), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* NAND AD7 */
++	{OFFSET(gpmc_wait0), (MODE(0) | RXACTIVE | PULLUP_EN)}, /* NAND WAIT */
++	{OFFSET(gpmc_wpn), (MODE(7) | PULLUP_EN | RXACTIVE)},	/* NAND_WPN */
++	{OFFSET(gpmc_csn0), (MODE(0) | PULLUDEN)},	/* NAND_CS0 */
++	{OFFSET(gpmc_advn_ale), (MODE(0) | PULLUDEN)}, /* NAND_ADV_ALE */
++	{OFFSET(gpmc_oen_ren), (MODE(0) | PULLUDEN)},	/* NAND_OE */
++	{OFFSET(gpmc_wen), (MODE(0) | PULLUDEN)},	/* NAND_WEN */
++	{OFFSET(gpmc_be0n_cle), (MODE(0) | PULLUDEN)},	/* NAND_BE_CLE */
++	{-1},
++};
++
++void enable_uart0_pin_mux(void)
++{
++	configure_module_pin_mux(uart0_pin_mux);
++}
++
++void enable_board_pin_mux()
++{
++	configure_module_pin_mux(i2c0_pin_mux);
++	configure_module_pin_mux(uart0_pin_mux);
++	configure_module_pin_mux(mii1_pin_mux);
++	configure_module_pin_mux(mmc0_pin_mux);
++	configure_module_pin_mux(nand_pin_mux);
++}
+diff --git a/configs/ett_aura_defconfig b/configs/ett_aura_defconfig
+new file mode 100644
+index 0000000000..def2af6cba
+--- /dev/null
++++ b/configs/ett_aura_defconfig
+@@ -0,0 +1,46 @@
++CONFIG_ARM=y
++CONFIG_ARCH_CPU_INIT=y
++CONFIG_ARCH_OMAP2PLUS=y
++CONFIG_SPL_GPIO_SUPPORT=y
++CONFIG_SPL_LIBCOMMON_SUPPORT=y
++CONFIG_SPL_LIBGENERIC_SUPPORT=y
++# CONFIG_ENV_SIZE=0x4000
++CONFIG_AM33XX=y
++CONFIG_TARGET_ETT_AURA=y
++CONFIG_SPL_MMC_SUPPORT=y
++# CONFIG_SPL_NAND_SUPPORT is not set
++CONFIG_SPL_SERIAL_SUPPORT=y
++CONFIG_SPL=y
++CONFIG_SPL_FS_FAT=y
++CONFIG_SPL_LIBDISK_SUPPORT=y
++CONFIG_DISTRO_DEFAULTS=y
++# CONFIG_USE_BOOTCOMMAND is not set
++CONFIG_SYS_CONSOLE_INFO_QUIET=y
++CONFIG_VERSION_VARIABLE=y
++CONFIG_ARCH_MISC_INIT=y
++CONFIG_SPL_ENV_SUPPORT=y
++CONFIG_SPL_FS_EXT4=y
++# CONFIG_SPL_MTD_SUPPORT=y
++# CONFIG_SPL_NET_SUPPORT=y
++# CONFIG_SPL_NET_VCI_STRING="AM335x U-Boot SPL"
++# CONFIG_SPL_OS_BOOT=y
++# # CONFIG_SPL_POWER_SUPPORT=y
++CONFIG_SPL_WATCHDOG_SUPPORT=y
++CONFIG_SPL_YMODEM_SUPPORT=y
++CONFIG_CMD_SPL=y
++CONFIG_CMD_ASKENV=y
++CONFIG_CMD_EEPROM=y
++CONFIG_CMD_GPIO=y
++# CONFIG_CMD_I2C=y
++CONFIG_CMD_MMC=y
++CONFIG_CMD_SPI=y
++CONFIG_CMD_EXT4_WRITE=y
++# CONFIG_CMD_DIAG=y
++# CONFIG_SYS_RELOC_GD_ENV_ADDR=y
++CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
++CONFIG_MMC_OMAP_HS=y
++# CONFIG_DRIVER_TI_CPSW=y
++CONFIG_SPI=y
++CONFIG_OMAP3_SPI=y
++CONFIG_FAT_WRITE=y
++CONFIG_OF_LIBFDT=y
+diff --git a/include/configs/ett_aura.h b/include/configs/ett_aura.h
+new file mode 100644
+index 0000000000..c37e5d66a2
+--- /dev/null
++++ b/include/configs/ett_aura.h
+@@ -0,0 +1,77 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++/*
++ * Copyright (C) 2013 Gumstix, Inc. - http://www.gumstix.com/
++ */
++
++#ifndef __CONFIG_ETT_AURA_H
++#define __CONFIG_ETT_AURA_H
++
++#include <configs/ti_am335x_common.h>
++
++/* Clock defines */
++#define V_OSCK				24000000  /* Clock output from T2 */
++#define V_SCLK				(V_OSCK)
++
++#define CONFIG_SYS_I2C_EEPROM_ADDR	0x50
++
++#define CONFIG_EXTRA_ENV_SETTINGS \
++	DEFAULT_LINUX_BOOT_ENV \
++	"bootdir=/boot\0" \
++	"bootfile=zImage\0" \
++	"fdtfile=am335x-aura.dtb\0" \
++	"console=ttyO0,115200n8\0" \
++	"optargs=\0" \
++	"mmcdev=0\0" \
++	"mmcroot=/dev/mmcblk0p2 rw\0" \
++	"mmcrootfstype=ext4 rootwait\0" \
++	"mmcargs=setenv bootargs console=${console} " \
++		"${optargs} " \
++		"root=${mmcroot} " \
++		"rootfstype=${mmcrootfstype}\0" \
++	"bootenv=uEnv.txt\0" \
++	"loadbootenv=load mmc ${mmcdev} ${loadaddr} ${bootenv}\0" \
++	"importbootenv=echo Importing environment from mmc ...; " \
++		"env import -t ${loadaddr} ${filesize}\0" \
++	"mmcload=load mmc ${mmcdev}:2 ${loadaddr} ${bootdir}/${bootfile}; " \
++		"load mmc ${mmcdev}:2 ${fdtaddr} ${bootdir}/${fdtfile}\0" \
++	"loaduimage=fatload mmc ${mmcdev}:1 ${loadaddr} uImage\0" \
++	"loadimage=load mmc ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
++	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
++	"uimageboot=echo Booting from mmc${mmcdev} ...; " \
++		"run mmcargs; " \
++		"bootm ${loadaddr}\0" \
++	"mmcboot=echo Booting from mmc ...; " \
++		"run mmcargs; " \
++		"bootz ${loadaddr} - ${fdtaddr}\0" \
++	"ubiboot=echo Booting from nand (ubifs) ...; " \
++		"run ubiargs; run ubiload; " \
++		"bootz ${loadaddr} - ${fdtaddr}\0" \
++
++#define CONFIG_BOOTCOMMAND \
++	"mmc dev ${mmcdev}; if mmc rescan; then " \
++		"echo SD/MMC found on device ${mmcdev};" \
++		"if run loadbootenv; then " \
++			"echo Loaded environment from ${bootenv};" \
++			"run importbootenv;" \
++		"fi;" \
++		"if test -n $uenvcmd; then " \
++			"echo Running uenvcmd ...;" \
++			"run uenvcmd;" \
++		"fi;" \
++		"if run mmcload; then " \
++			"run mmcboot;" \
++		"fi;" \
++		"if run loaduimage; then " \
++			"run uimageboot;" \
++		"fi;" \
++	"fi;" \
++
++/* Serial console configuration */
++#define CONFIG_SYS_NS16550_COM1		0x44e09000
++
++/* Ethernet support */
++#define CONFIG_PHY_RESET_DELAY 1000
++
++/* SPL */
++
++#endif /* __CONFIG_ETT_AURA_H */

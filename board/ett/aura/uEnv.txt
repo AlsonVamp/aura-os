@@ -1,0 +1,6 @@
+bootdir=
+bootpart=0:1
+devtype=mmc
+console=ttyS0,115200n8
+args_mmc=setenv bootargs console=${console} ${optargs} root=/dev/mmcblk0p2 rw rootfstype=${mmcrootfstype}
+uenvcmd=run loadimage;run loadfdt;run mmcboot 
