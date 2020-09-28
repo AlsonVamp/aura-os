@@ -1,0 +1,2 @@
+/dev/root / auto rw 0 1
+/dev/mmcblk0p3 /mnt/data auto rw 0 1
