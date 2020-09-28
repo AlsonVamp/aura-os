@@ -15,10 +15,6 @@
 		reg = <0x80000000 0x10000000>; /* 256 MB */
 	};
 
-	aliases {
-		ethernet2 = &wlcore;
-	};
-
 	buttons: user_buttons {
 		compatible = "gpio-keys";
 	};
@@ -56,6 +52,13 @@
 			gpios = <&gpio1 24 GPIO_ACTIVE_HIGH>;
 			linux,default-trigger = "mmc1";
 			default-state = "off";
+		};
+
+		usr_4_led {
+			label = "aura:led1";
+			gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "cpu0";
+			default-state = "keep";
 		};
 	};
 
@@ -137,6 +140,7 @@
 			AM33XX_PADCONF(AM335X_PIN_GPMC_A6, PIN_OUTPUT, MUX_MODE7) /* (U15) gpmc_a6.gpio1[22] - USR_LED_1 */
 			AM33XX_PADCONF(AM335X_PIN_GPMC_A7, PIN_OUTPUT, MUX_MODE7) /* (T15) gpmc_a7.gpio1[23] - USR_LED_2 */
 			AM33XX_PADCONF(AM335X_PIN_GPMC_A8, PIN_OUTPUT, MUX_MODE7) /* (V16) gpmc_a8.gpio1[24] - USR_LED_3 */
+			AM33XX_PADCONF(AM335X_PIN_ECAP0_IN_PWM0_OUT, PIN_OUTPUT, MUX_MODE7) /* (C18) gpio0[7] - TOP_LED */
 		>;
 	};
 };
@@ -220,6 +224,10 @@
 		reg = <0x68>;
 		status = "okay";
 	};
+};
+
+&rtc {
+	status = "disabled";
 };
 
 &am33xx_pinmux {
