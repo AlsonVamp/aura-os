@@ -1,2 +1,3 @@
 /dev/root / auto ro 0 1
 /dev/mmcblk0p3 /mnt/data auto rw 0 1
+tmpfs /etc/docker tmpfs size=10K,mode=0755 0 0
