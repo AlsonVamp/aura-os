@@ -66,7 +66,7 @@
 		compatible = "regulator-fixed";
 		regulator-name = "vmmcsd_fixed";
 		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;		regulator-always-on;
 	};
 
 	dcdc3v3: fixedregulator1 {
@@ -77,6 +77,14 @@
 		regulator-always-on;
 		enable-active-high;
 		gpio = <&gpio1 18 GPIO_ACTIVE_HIGH >; /* P9-14 */
+	};
+
+	sound {
+		compatible = "ti,pcm5102a";
+		ti,model = "TI PCM5102A";
+		ti,audio-codec = <&pcm5102a>;
+		ti,mcasp-controller = <&mcasp0>;
+		ti,codec-clock-rate = <24000000>;
 	};
 };
 
@@ -141,6 +149,14 @@
 			AM33XX_PADCONF(AM335X_PIN_GPMC_A7, PIN_OUTPUT, MUX_MODE7) /* (T15) gpmc_a7.gpio1[23] - USR_LED_2 */
 			AM33XX_PADCONF(AM335X_PIN_GPMC_A8, PIN_OUTPUT, MUX_MODE7) /* (V16) gpmc_a8.gpio1[24] - USR_LED_3 */
 			AM33XX_PADCONF(AM335X_PIN_ECAP0_IN_PWM0_OUT, PIN_OUTPUT, MUX_MODE7) /* (C18) gpio0[7] - TOP_LED */
+		>;
+	};
+
+	audio_pins: pinmux_audio_pins {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSX, PIN_INPUT_PULLDOWN, MUX_MODE0)
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKX, PIN_INPUT_PULLDOWN, MUX_MODE0)
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AXR0, PIN_INPUT_PULLDOWN, MUX_MODE0)
 		>;
 	};
 };
@@ -324,3 +340,23 @@
 		>;
 	};
 };
+
+&mcasp0 {
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&audio_pins>;
+	status = "okay";
+	op-mode = <0>;          /* MCASP_IIS_MODE */
+	tdm-slots = <2>;
+	/* 16 serializer */
+	serial-dir = <  /* 0: INACTIVE, 1: TX, 2: RX */
+		1 0 0 0
+	>;
+	tx-num-evt = <32>;
+	rx-num-evt = <32>;
+
+	pcm5102a: pcm5102a {
+		compatible = "ti,pcm5102a";
+	};
+};
+
