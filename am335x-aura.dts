@@ -78,7 +78,7 @@
 		dailink0_master: simple-audio-card,cpu {
 			sound-dai = <&mcasp0>;
 			system-clock-frequency = <24000000>;
-			system-clock-direction = "out";
+			system-clock-direction-out;
 		};
 		
 		simple-audio-card,codec {
