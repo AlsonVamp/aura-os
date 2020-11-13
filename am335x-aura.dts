@@ -72,13 +72,13 @@
 		compatible = "simple-audio-card";
 		simple-audio-card,name = "TI PCM5102A";
 		simple-audio-card,format = "i2s";
-		simple-audio-card,cpu {
+		simple-audio-card,bitclock-master = <&dailink0_master>;
+		simple-audio-card,frame-master = <&dailink0_master>;
+		simple-audio-card,bitclock-inversion;
+		dailink0_master: simple-audio-card,cpu {
 			sound-dai = <&mcasp0>;
-			// bitclock-master;
-			// bitclock-inversion;
-			frame-master; 
-			//system-clock-frequency = <24000000>;
-			//system-clock-direction = "out";
+			system-clock-frequency = <24000000>;
+			system-clock-direction = "out";
 		};
 		
 		simple-audio-card,codec {
@@ -172,9 +172,10 @@
 
 	audio_pins: pinmux_audio_pins {
 		pinctrl-single,pins = <
-			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSX, PIN_INPUT_PULLDOWN, MUX_MODE0)
-			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKX, PIN_INPUT_PULLDOWN, MUX_MODE0)
-			AM33XX_PADCONF(AM335X_PIN_MCASP0_AXR0, PIN_INPUT_PULLDOWN, MUX_MODE0)
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_INPUT_PULLUP, MUX_MODE0) /* mcasp0_ahcklx.mcasp0_ahclkx */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKR, PIN_OUTPUT_PULLDOWN, MUX_MODE2) /* mcasp0_ahclkr.mcasp0_axr2*/
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSX, PIN_OUTPUT_PULLUP, MUX_MODE0)
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE0)
 		>;
 	};
 
@@ -228,16 +229,6 @@
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_UART1_CTSN, PIN_INPUT_PULLUP, MUX_MODE3)
 			AM33XX_PADCONF(AM335X_PIN_UART1_RTSN, PIN_INPUT_PULLUP, MUX_MODE3)
-		>;
-	};
-
-	usb_pins: pinmux_usb {
-		/* Not populated */
-		pinctrl-single,pins = <
-			/* USB0 Over-Current (active low) */
-			AM33XX_PADCONF(AM335X_PIN_GPMC_A9, PIN_INPUT, MUX_MODE7)	/* gpmc_a9.gpio1_25 */
-			/* USB1 Over-Current (active low) */
-			AM33XX_PADCONF(AM335X_PIN_GPMC_A10, PIN_INPUT, MUX_MODE7)	/* gpmc_a10.gpio1_26 */
 		>;
 	};
 };
@@ -319,16 +310,6 @@
 };
 
 /* USB */
-&usb {
-	status = "okay";
-
-	pinctrl-names = "default";
-	pinctrl-0 = <&usb_pins>;
-};
-
-&usb_ctrl_mod {
-	status = "okay";
-};
 
 &usb0_phy {
 	status = "okay";
@@ -340,12 +321,12 @@
 
 &usb0 {
 	status = "okay";
-        dr_mode = "host";
+    dr_mode = "peripheral";
 };
 
 &usb1 {
 	status = "okay";
-        dr_mode = "host";
+    dr_mode = "host";
 };
 
 &cppi41dma {
@@ -359,9 +340,8 @@
 	status = "okay";
 	op-mode = <0>;          /* MCASP_IIS_MODE */
 	tdm-slots = <2>;
-	/* 16 serializer */
 	serial-dir = <  /* 0: INACTIVE, 1: TX, 2: RX */
-		1 0 0 0
+		0 0 1 0
 	>;
 	tx-num-evt = <32>;
 	rx-num-evt = <32>;
