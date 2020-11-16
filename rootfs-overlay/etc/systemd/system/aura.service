@@ -1,0 +1,11 @@
+[Unit]
+Description=ETT-Aura Automation Service
+After=docker.service
+Requires=docker.service
+RequiresMountsFor=/mnt/data
+
+[Service]
+ExecStart=/mnt/data/start.sh
+
+[Install]
+WantedBy=multi-user.target
