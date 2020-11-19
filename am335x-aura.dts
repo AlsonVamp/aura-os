@@ -5,6 +5,7 @@
 /dts-v1/;
 
 #include "am33xx.dtsi"
+#include <dt-bindings/input/input.h>
 
 / {
 	model = "Ecotelecom-T Aura";
@@ -15,9 +16,20 @@
 		reg = <0x80000000 0x10000000>; /* 256 MB */
 	};
 
-	buttons: user_buttons {
-		compatible = "gpio-keys";
+
+	adc-keys {
+		compatible = "adc-keys";
+		io-channels = <&am335x_adc 1>;
+		io-channel-names = "buttons";
+		keyup-threshold-microvolt = <2000000>;
+
+		button0 {
+			label = "Main";
+			linux,code = <KEY_POWER>;
+			press-threshold-microvolt = <0>;
+		};
 	};
+
 
 	leds: user_leds {
 		
@@ -131,6 +143,14 @@
 	pinctrl-0 = <&cpsw_default>;
 	pinctrl-1 = <&cpsw_sleep>;
 	status = "okay";
+};
+
+/* Enable ADC Channel 1 */
+&tscadc {
+    status = "okay";    
+    adc {
+        ti,adc-channels = < 1 >;
+    };  
 };
 
 
