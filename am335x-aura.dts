@@ -19,7 +19,7 @@
 
 	adc-keys {
 		compatible = "adc-keys";
-		io-channels = <&am335x_adc 1>;
+		io-channels = <&am335x_adc 0>;
 		io-channel-names = "buttons";
 		keyup-threshold-microvolt = <2000000>;
 
