@@ -273,6 +273,12 @@
 		>;
 	};
 
+	wireless_cs: pinmux_wireless {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_GPMC_ADVN_ALE, PIN_OUTPUT_PULLDOWN, MUX_MODE7)
+		>;
+	};
+
 	spi0_pins: pinmux_spi0 {
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_SPI0_SCLK, PIN_INPUT_PULLUP, MUX_MODE0)
@@ -321,6 +327,17 @@
 	#size-cells = <0>;
 	wlcore: wlcore@2 {
 		reg = <2>;
+	};
+};
+
+&gpio2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&wireless_cs>;
+	wifi_cs {
+		gpio-hog;
+		gpios = <2 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "wifi_cs";
 	};
 };
 
