@@ -5,6 +5,7 @@
 /dts-v1/;
 
 #include "am33xx.dtsi"
+#include <dt-bindings/input/input.h>
 
 / {
 	model = "Ecotelecom-T Aura";
@@ -15,9 +16,20 @@
 		reg = <0x80000000 0x10000000>; /* 256 MB */
 	};
 
-	buttons: user_buttons {
-		compatible = "gpio-keys";
+
+	adc-keys {
+		compatible = "adc-keys";
+		io-channels = <&am335x_adc 0>;
+		io-channel-names = "buttons";
+		keyup-threshold-microvolt = <2000000>;
+
+		button0 {
+			label = "Main";
+			linux,code = <KEY_POWER>;
+			press-threshold-microvolt = <0>;
+		};
 	};
+
 
 	leds: user_leds {
 		
@@ -131,6 +143,14 @@
 	pinctrl-0 = <&cpsw_default>;
 	pinctrl-1 = <&cpsw_sleep>;
 	status = "okay";
+};
+
+/* Enable ADC Channel 1 */
+&tscadc {
+    status = "okay";    
+    adc {
+        ti,adc-channels = < 1 >;
+    };  
 };
 
 
@@ -253,6 +273,12 @@
 		>;
 	};
 
+	wireless_cs: pinmux_wireless {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_GPMC_ADVN_ALE, PIN_OUTPUT_PULLDOWN, MUX_MODE7)
+		>;
+	};
+
 	spi0_pins: pinmux_spi0 {
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_SPI0_SCLK, PIN_INPUT_PULLUP, MUX_MODE0)
@@ -301,6 +327,17 @@
 	#size-cells = <0>;
 	wlcore: wlcore@2 {
 		reg = <2>;
+	};
+};
+
+&gpio2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&wireless_cs>;
+	wifi_cs {
+		gpio-hog;
+		gpios = <2 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "wifi_cs";
 	};
 };
 

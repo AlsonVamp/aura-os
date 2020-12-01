@@ -1,0 +1,14 @@
+[Unit]
+Description=ETT-Aura Automation Service
+After=docker.service
+Requires=docker.service
+RequiresMountsFor=/mnt/data
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/mnt/data/start.sh
+ExecStop=/usr/bin/docker stop $(/usr/bin/docker ps -q)
+
+[Install]
+WantedBy=multi-user.target
