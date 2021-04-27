@@ -1,0 +1,15 @@
+[NetDev]
+Name=wg0
+Kind=wireguard
+Description=WireGuard tunnel wg0
+
+[WireGuard]
+ListenPort=51871
+PrivateKey=PEER_A_PRIVATE_KEY
+
+[WireGuardPeer]
+PublicKey=PEER_B_PUBLIC_KEY
+PresharedKey=PEER_A-PEER_B-PRESHARED_KEY
+AllowedIPs=10.0.0.2/32
+AllowedIPs=fdc9:281f:04d7:9ee9::2/128
+Endpoint=peer-b.example:51902
