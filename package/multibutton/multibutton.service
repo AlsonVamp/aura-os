@@ -1,0 +1,8 @@
+[Unit]
+Description=Button event daemon
+
+[Service]
+ExecStart=/usr/bin/multibutton
+
+[Install]
+WantedBy=multi-user.target

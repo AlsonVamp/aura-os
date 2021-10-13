@@ -1,1 +1,2 @@
 source "$BR2_EXTERNAL_AURA_PATH/package/rtl8189es/Config.in"
+source "$BR2_EXTERNAL_AURA_PATH/package/multibutton/Config.in"
