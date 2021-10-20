@@ -23,7 +23,8 @@ void short_press_handle()
 
 void long_press_handle()
 {
-    system("shutdown -P now");
+    //system("shutdown -P now");
+    printf("Long press\n");
 }
 
 int main()
@@ -36,7 +37,7 @@ int main()
     time_t pressed_time = time(NULL);
     struct input_event ev[64];
 
-    fd = open(dev, O_RDONLY);
+    fd = open(dev, O_RDONLY | O_NONBLOCK);
     if (fd == -1)
     {
         fprintf(stderr, "Cannot open %s\n", dev);
@@ -47,11 +48,29 @@ int main()
     {
         rd = read(fd, ev, sizeof(struct input_event) * 64);
 
+        sleep(0);
+
+        if (rd == -1)
+        {
+            if (prev_value)
+        {
+            if (time(NULL) - pressed_time >= LONG_PRESS_DELAY && !action_done)
+            {
+                long_press_handle();
+                action_done = 1;
+            }
+        } else {
+            action_done = 0;
+        }
+            continue;
+        }
+
         if (rd < (int)sizeof(struct input_event))
         {
             perror("\nSystem button failure");
             exit(EXIT_FAILURE);
-        }
+        }      
+
 
         for (i = 0; i < rd / sizeof(struct input_event); i++)
         {
@@ -71,14 +90,6 @@ int main()
                 {
                     short_press_handle();
                 }
-
-                if (ev[i].time.tv_sec - pressed_time >= LONG_PRESS_DELAY && !action_done)
-                {
-                    long_press_handle();
-                    action_done = 1;
-                }
-                if (!ev[i].value)
-                    action_done = 0;
             }
         }
     }
