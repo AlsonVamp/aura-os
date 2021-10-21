@@ -1,6 +1,8 @@
 /*
  *  Button events handler
  *
+ *  leds use oneshot trigger from /lib/modules/[your kernel release]/kernel/drivers/leds/trigger 
+ *
  *  Copyright (C) 2021 Aleksandr Nazarov
  */
 
@@ -16,13 +18,28 @@
 #define MAX_SHORT_PRESS_TIME 1
 #define LONG_PRESS_DELAY 4
 
+
+void blink_led() {
+    int fd;
+    char d = '1';
+    fd = open("/sys/class/leds/aura:led1/shot", O_WRONLY);
+    if(fd == -1){
+        printf("Led trigger unavailable\n");
+    } else {
+        write (fd, &d, 1);
+        close(fd);
+    }
+}
+
 void short_press_handle()
 {
+    blink_led();
     printf("Short press\n");
 }
 
 void long_press_handle()
 {
+    blink_led();
     system("shutdown -P now");
 }
 
