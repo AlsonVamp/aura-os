@@ -34,6 +34,7 @@
 		compatible = "gpio-keys";
 		pinctrl-names = "default";
 		pinctrl-0 = <&user_buttons_pins>;
+		autorepeat;
 
 		button@0 {
 			label = "multibutton";
