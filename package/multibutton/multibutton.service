@@ -1,5 +1,7 @@
 [Unit]
 Description=Button event daemon
+Requires=sys-devices-platform-user_buttons-input-input0-event0.device
+After=sys-devices-platform-user_buttons-input-input0-event0.device
 
 [Service]
 ExecStart=/usr/bin/multibutton

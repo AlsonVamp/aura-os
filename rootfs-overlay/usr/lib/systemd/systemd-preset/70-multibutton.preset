@@ -1,0 +1,3 @@
+# /usr/lib/systemd/system-preset/70-multibutton.preset
+
+enable multibutton.service
