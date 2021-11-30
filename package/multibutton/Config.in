@@ -1,0 +1,6 @@
+config BR2_PACKAGE_MULTIBUTTON
+	bool "multibutton"
+	help
+	  multibutton works with onboard push button to distinguish 
+	  between short and long press events 
+

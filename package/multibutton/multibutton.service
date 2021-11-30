@@ -1,0 +1,12 @@
+[Unit]
+Description=Button event daemon
+Requires=sys-devices-platform-user_buttons-input-input0-event0.device
+After=sys-devices-platform-user_buttons-input-input0-event0.device
+
+[Service]
+ExecStartPre=-/usr/bin/sh -c '/usr/bin/echo oneshot > /sys/class/leds/aura:led1/trigger'
+ExecStartPre=-/usr/bin/sh -c '/usr/bin/echo "1" > /sys/class/leds/aura:led1/shot'
+ExecStart=/usr/bin/multibutton
+
+[Install]
+WantedBy=multi-user.target

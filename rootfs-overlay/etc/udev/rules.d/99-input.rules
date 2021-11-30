@@ -1,0 +1,1 @@
+ACTION=="add", SUBSYSTEM=="input", ATTR{device/name}=="user_buttons", TAG+="systemd", SYMLINK+="input/multibutton", ENV{SYSTEMD_ALIAS}+="/dev/input/multibutton>"
