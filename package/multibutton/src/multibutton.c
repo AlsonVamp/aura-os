@@ -46,7 +46,7 @@ void long_press_handle()
 int main()
 {
 
-    const char *dev = "/dev/input/event0";
+    const char *dev = "/dev/input/multibutton";
     int fd, rd, i;
     int prev_value = 0;
     int action_done = 0;
