@@ -297,10 +297,17 @@
 		>;
 	};
 
-	gpio_pins: pinmux_gpio {
+	gpio1_pins: pinmux_gpio1 {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_GPMC_BEN1, PIN_OUTPUT, MUX_MODE7) /* rf_power */	
+		>;
+	};
+
+	gpio2_pins: pinmux_gpio2 {
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_GPMC_ADVN_ALE, PIN_OUTPUT_PULLDOWN, MUX_MODE7) /* wifi_cs */
 			AM33XX_PADCONF(AM335X_PIN_LCD_VSYNC, PIN_OUTPUT, MUX_MODE7) /* pcie_power */
+			
 		>;
 	};
 
@@ -370,7 +377,7 @@
 
 &gpio2 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&gpio_pins>;
+	pinctrl-0 = <&gpio2_pins>;
 	wifi_cs {
 		gpio-hog;
 		gpios = <2 GPIO_ACTIVE_HIGH>;
@@ -382,6 +389,19 @@
 		gpios = <22 GPIO_ACTIVE_HIGH>;
 		output-low;
 		line-name = "pcie_power";
+	};
+};
+
+&gpio1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&gpio1_pins>;
+	status = "okay";
+
+	rf_power {
+		gpio-hog;
+		gpios = <28 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "rf_power";
 	};
 };
 
