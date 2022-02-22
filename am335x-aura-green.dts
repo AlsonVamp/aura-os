@@ -6,6 +6,7 @@
 
 #include "am33xx.dtsi"
 #include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
 
 / {
 	model = "Ecotelecom-T Aura";
@@ -94,8 +95,30 @@
 		usr_4_led {
 			label = "aura:led1";
 			gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "oneshot";
 			default-state = "on";
 		};
+
+		usr_5_led {
+			label = "aura:app:action";
+			gpios = <&gpio1 14 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "transient";
+			default-state = "off";
+		};
+
+		usr_6_led {
+			label = "aura:wg:link";
+			gpios = <&gpio2 1 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "netdev";
+			default-state = "off";
+		};
+	};
+
+	pwm-beeper {
+		compatible = "pwm-beeper";
+		pwms = <&ehrpwm1 0 5000>;
+		volume-levels = <0 8 20 40 500>;
+		default-volume-level = <4>;
 	};
 
 	pcm5102a: pcm5102a {
@@ -299,7 +322,7 @@
 
 	gpio1_pins: pinmux_gpio1 {
 		pinctrl-single,pins = <
-			AM33XX_PADCONF(AM335X_PIN_GPMC_BEN1, PIN_OUTPUT, MUX_MODE7) /* rf_power */	
+			AM33XX_PADCONF(AM335X_PIN_GPMC_BEN1, PIN_OUTPUT, MUX_MODE7) /* rf_power */
 		>;
 	};
 
@@ -339,6 +362,13 @@
 			AM33XX_PADCONF(AM335X_PIN_I2C0_SCL, PIN_INPUT, MUX_MODE0)
 		>;
 	};
+
+	beeper_pins: pinmux_beeper {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_GPMC_A3, PIN_OUTPUT, MUX_MODE6) /* (T14) gpio1[19] OR EHRPWM1B - BUZZER */
+		>;
+	};
+
 };
 
 /* MMC */
@@ -446,6 +476,13 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart5_pins>;
 };
+
+/* PWM */
+//&ehrpwm1 {
+//	status = "okay";
+//	pinctrl-names = "default";
+//	pinctrl-0 = <&beeper_pins>;
+//};
 
 /* USB */
 
