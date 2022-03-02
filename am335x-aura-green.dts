@@ -112,13 +112,13 @@
 			linux,default-trigger = "netdev";
 			default-state = "off";
 		};
-	};
 
-	pwm-beeper {
-		compatible = "pwm-beeper";
-		pwms = <&ehrpwm1 0 5000>;
-		volume-levels = <0 8 20 40 500>;
-		default-volume-level = <4>;
+		usr_7_led {
+			label = "aura:beeper";
+			gpios = <&gpio1 19 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "oneshot";
+			default-state = "off";
+		};
 	};
 
 	pcm5102a: pcm5102a {
@@ -365,7 +365,7 @@
 
 	beeper_pins: pinmux_beeper {
 		pinctrl-single,pins = <
-			AM33XX_PADCONF(AM335X_PIN_GPMC_A3, PIN_OUTPUT, MUX_MODE6) /* (T14) gpio1[19] OR EHRPWM1B - BUZZER */
+			AM33XX_PADCONF(AM335X_PIN_GPMC_A3, PIN_OUTPUT, MUX_MODE7) /* (T14) gpio1[19] OR EHRPWM1B - BUZZER */
 		>;
 	};
 
