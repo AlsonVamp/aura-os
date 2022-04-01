@@ -1,6 +1,7 @@
 [Unit]
 Description=Leds Initial setup
 #After=network.target
+After=multi-user.target
 
 [Service]
 Type=oneshot
