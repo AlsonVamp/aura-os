@@ -23,20 +23,6 @@
 		reg = <0x80000000 0x10000000>; /* 256 MB */
 	};
 
-
-	adc-keys {
-		compatible = "adc-keys";
-		io-channels = <&am335x_adc 0>;
-		io-channel-names = "buttons";
-		keyup-threshold-microvolt = <2000000>;
-
-		button0 {
-			label = "Main";
-			linux,code = <KEY_POWER>;
-			press-threshold-microvolt = <0>;
-		};
-	};
-
 	user_buttons: user_buttons {
 		compatible = "gpio-keys";
 		pinctrl-names = "default";
@@ -49,12 +35,6 @@
 			gpios = <&gpio0 20 GPIO_ACTIVE_LOW>;
 			wakeup-source;
 		};
-	};
-
-	gpio-poweroff {
-		compatible = "gpio-poweroff";
-		gpios = <&gpio2 22 GPIO_ACTIVE_HIGH>;
-		timeout-ms = <20000>;
 	};
 
 	leds: user_leds {
@@ -191,15 +171,6 @@
 	pinctrl-1 = <&cpsw_sleep>;
 	status = "okay";
 };
-
-/* Enable ADC Channel 1 */
-&tscadc {
-    status = "okay";    
-    adc {
-        ti,adc-channels = < 1 >;
-    };  
-};
-
 
 &am33xx_pinmux {
 	cpsw_default: cpsw_default {
@@ -496,18 +467,10 @@
 
 /* USB */
 
-&usb0_phy {
-	status = "okay";
-};
-
 &usb1_phy {
 	status = "okay";
 };
 
-&usb0 {
-	status = "okay";
-    dr_mode = "peripheral";
-};
 
 &usb1 {
 	status = "okay";
@@ -597,4 +560,12 @@
 			regulator-always-on;
 		};
 	};
+};
+
+&sham {
+	status = "okay";
+};
+
+&aes {
+	status = "okay";
 };
